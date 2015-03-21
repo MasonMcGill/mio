@@ -1,3 +1,4 @@
-nimcache/
-mio
-*.html
+**/nimcache/
+**/mio
+**/test
+**/*.html

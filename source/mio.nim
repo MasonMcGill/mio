@@ -1,17 +1,22 @@
 import os
 import strutils
 
-import options
+import optionals
 import numerics
 import pipelines
 
 #===============================================================================
 # GObject Imports
 
+const gObjectPath =
+  when hostOS == "linux": "libgobject-2.0.so"
+  elif hostOS == "macosx": "libgobject-2.0.dylib"
+  else: "unknown"
+
 type GError = object
 type GType = csize
 
-{.push callConv: cDecl, dynLib: "libgobject-2.0.so", importC.}
+{.push callConv: cDecl, dynLib: gObjectPath, importC.}
 
 proc g_signal_emit_by_name(instance: pointer, detailed_signal: cstring)
                            {.varargs.}
@@ -19,6 +24,11 @@ proc g_signal_emit_by_name(instance: pointer, detailed_signal: cstring)
 
 #===============================================================================
 # GStreamer Imports
+
+const gStreamerPath =
+  when hostOS == "linux": "libgstreamer-1.0.so"
+  elif hostOS == "macosx": "libgstreamer-1.0.dylib"
+  else: "unknown"
 
 type GstClockTime = int64
 type GstFlowReturn = cint
@@ -63,7 +73,7 @@ const GST_STATE_CHANGE_FAILURE = 0
 const GST_STATE_NULL = 1
 const GST_STATE_PLAYING = 4
 
-{.push callConv: cDecl, dynLib: "libgstreamer-1.0.so", importC.}
+{.push callConv: cDecl, dynLib: gStreamerPath, importC.}
 
 proc gst_bin_get_by_name(bin: ptr GstBin, name: cstring): ptr GstElement
 
@@ -330,7 +340,7 @@ proc close*(source: var VideoSource) =
 iterator items*(source: var VideoSource): Image =
   while true:
     let frame = source.read
-    if frame.hasValue: yield frame
+    if frame.hasValue: yield frame.value
     else: break
 
 #===============================================================================
@@ -345,7 +355,7 @@ type AudioSinkObj = object
 
 type AudioSink* = ref AudioSinkObj
 
-proc setUpPipeline(sink: var AudioSink) =
+proc setUpPipeline(sink: AudioSink) =
   let gstSourceDesc =
     "appsrc name=appsrc format=time block=true max-bytes=1 caps=audio/x-raw," &
     "rate=44100,channels=" & $sink.nChannels & ",format=F32LE," &
@@ -513,6 +523,3 @@ proc write*(sink: VideoSink, frame: Image) =
 proc close*(sink: VideoSink) =
   tearDownPipeline(sink)
   sink.pipe = nil
-
-#===============================================================================
-# Tests
