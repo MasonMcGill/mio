@@ -140,57 +140,16 @@ proc asUri(path: string): string =
     "file://" & getCurrentDir() / path
 
 #===============================================================================
-# Sound
+# Media Types
 
-# type Sound* = DenseGrid[tuple[s, c: int], float32]
-# proc nSamples*(sound: Sound): int = sound.size[0]
-# proc nChannels*(sound: Sound): int = sound.size[1]
+type Sound* = DenseGrid[tuple[s, c: int], float32]
+proc nSamples*(sound: Sound): int = sound.size[0]
+proc nChannels*(sound: Sound): int = sound.size[1]
 
-type Sound* = object
-  nSamples, nChannels: int
-  data: seq[float32]
-
-proc newSound*(nSamples: int, nChannels = 2): Sound =
-  Sound(nSamples: nSamples, nChannels: nChannels,
-        data: newSeq[float32](nSamples * nChannels))
-
-proc nSamples*(sound: Sound): int =
-  sound.nSamples
-
-proc nChannels*(sound: Sound): int =
-  sound.nChannels
-
-proc `[]`*(sound: Sound, s, c: int): float32 =
-  sound.data[sound.nChannels * s + c]
-
-proc `[]=`*(sound: var Sound, s, c: int, v: float32) =
-  sound.data[sound.nChannels * s + c] = v
-
-#===============================================================================
-# Image
-
-# type Image* = DenseGrid[tuple[h, w, c: int], float32]
-# proc height*(image: Image): int = image.size[0]
-# proc width*(image: Image): int = image.size[1]
-# proc nChannels*(image: Image): int = image.size[2]
-
-type Image* = object
-  height, width, nChannels: int
-  data: seq[float32]
-
-proc newImage*(height, width: int, nChannels = 3): Image =
-  Image(height: height, width: width, nChannels: nChannels,
-        data: newSeq[float32](height * width * nChannels))
-
-proc height*(image: Image): int = image.height
-proc width*(image: Image): int = image.width
-proc nChannels*(image: Image): int = image.nChannels
-
-proc `[]`*(image: Image, y, x, c: int): float =
-  image.data[image.width * image.nChannels * y + image.nChannels * x + c]
-
-proc `[]=`*(image: var Image, y, x, c: int, v: float) =
-  image.data[image.width * image.nChannels * y + image.nChannels * x + c] = v
+type Image* = DenseGrid[tuple[h, w, c: int], float32]
+proc height*(image: Image): int = image.size[0]
+proc width*(image: Image): int = image.size[1]
+proc nChannels*(image: Image): int = image.size[2]
 
 #===============================================================================
 # AudioSource
@@ -314,7 +273,7 @@ proc newVideoSource*(path=""): VideoSource =
   result.width = width
   result.pipe = pipe
 
-proc read*(source: var VideoSource): Optional[Image] =
+proc read*(source: VideoSource): Optional[Image] =
   assert source.pipe != nil
   var mapInfo: GstMapInfo
   var sample: ptr GstSample
@@ -333,11 +292,11 @@ proc read*(source: var VideoSource): Optional[Image] =
   gst_buffer_unmap(buffer, addr mapInfo)
   gst_mini_object_unref(cast[ptr GstMiniObject](sample))
 
-proc close*(source: var VideoSource) =
+proc close*(source: VideoSource) =
   tearDownPipeline(source)
   source.pipe = nil
 
-iterator items*(source: var VideoSource): Image =
+iterator items*(source: VideoSource): Image =
   while true:
     let frame = source.read
     if frame.hasValue: yield frame.value
