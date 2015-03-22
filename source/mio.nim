@@ -127,10 +127,10 @@ proc gst_structure_get_int(structure: ptr GstStructure, fieldname: cstring,
 # Pointer Indexing
 
 proc `[]`[E](p: ptr E, i: int): E =
-  cast[ptr E]((cast[int](p) + i))[]
+  cast[ptr E]((cast[int](p) + i * sizeOf(E)))[]
 
 proc `[]=`[E](p: ptr E, i: int, e: E) =
-  cast[ptr E]((cast[int](p) + i))[] = e
+  cast[ptr E]((cast[int](p) + i * sizeOf(E)))[] = e
 
 #===============================================================================
 # URI Construction
