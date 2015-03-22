@@ -12,7 +12,7 @@ from subprocess import call, check_output
 # Define constants.
 
 DOC_SITE = 'mmcgill@vision.caltech.edu:public_html/mio'
-NIM_OPTIONS = '--verbosity:0 --warning[Deprecated]:off'
+NIM_OPTIONS = '--verbosity:0 --warning[Deprecated]:off -d:release'
 
 ################################################################################
 # Discover tests and benchmarks.

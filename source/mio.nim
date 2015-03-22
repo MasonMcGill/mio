@@ -124,6 +124,15 @@ proc gst_structure_get_int(structure: ptr GstStructure, fieldname: cstring,
 {.pop.}
 
 #===============================================================================
+# Pointer Indexing
+
+proc `[]`[E](p: ptr E, i: int): E =
+  cast[ptr E]((cast[int](p) + i))[]
+
+proc `[]=`[E](p: ptr E, i: int, e: E) =
+  cast[ptr E]((cast[int](p) + i))[] = e
+
+#===============================================================================
 # URI Construction
 
 proc isUri(path: string): bool =
@@ -142,20 +151,27 @@ proc asUri(path: string): string =
 #===============================================================================
 # Media Types
 
-type Sound* = DenseGrid[tuple[s, c: int], float32]
+type Sound* = DenseGrid[2, float32]
 proc nSamples*(sound: Sound): int = sound.size[0]
 proc nChannels*(sound: Sound): int = sound.size[1]
 
-type Image* = DenseGrid[tuple[h, w, c: int], float32]
+proc newSound*(nSamples, nChannels: int): Sound =
+  newDenseGrid(float32, nSamples, nChannels)
+
+type Image* = DenseGrid[3, float32]
 proc height*(image: Image): int = image.size[0]
 proc width*(image: Image): int = image.size[1]
 proc nChannels*(image: Image): int = image.size[2]
+
+proc newImage*(height, width, nChannels: int): Image =
+  newDenseGrid(float32, height, width, nChannels)
 
 #===============================================================================
 # AudioSource
 
 type AudioSourceObj = object
   pipe: ptr GstElement
+  typeClassTag_Source*: byte
 
 type AudioSource* = ref AudioSourceObj
 
@@ -227,6 +243,7 @@ iterator items*(source: AudioSource): Sound =
 type VideoSourceObj = object
   height, width: int
   pipe: ptr GstElement
+  typeClassTag_Source*: byte
 
 type VideoSource* = ref VideoSourceObj
 
@@ -311,6 +328,7 @@ type AudioSinkObj = object
   pipe: ptr GstElement
   nChannels: int
   hasBeenOpened: bool
+  typeClassTag_Sink*: byte
 
 type AudioSink* = ref AudioSinkObj
 
@@ -398,6 +416,7 @@ type VideoSinkObj = object
   pipe: ptr GstElement
   height, width, nChannels: int
   hasBeenOpened: bool
+  typeClassTag_Sink*: byte
 
 type VideoSink = ref VideoSinkObj
 
@@ -430,6 +449,7 @@ proc setUpPipeline(sink: VideoSink) =
 
 proc tearDownPipeline(sink: VideoSink) =
   if sink.pipe != nil:
+    echo "hi"
     let bus = gst_element_get_bus(sink.pipe)
     let appSource = gst_bin_get_by_name(cast[ptr GstBin](sink.pipe), "appsrc")
     discard gst_element_send_event(sink.pipe, gst_event_new_eos())
